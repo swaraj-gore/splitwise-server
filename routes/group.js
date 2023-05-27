@@ -26,6 +26,22 @@ router.get('/', (req, res) => {
     });
 });
 
+// Define a route to get group by id
+router.get('/:groupId', (req, res) => {
+    const groupId = +req.params.groupId;
+    const userId = req.userId;
+    const query = 'call get_group(?, ?)';
+    connection.query(query, [groupId, userId], (err, result) => {
+        if (err) console.log(err);
+
+        if (result.length > 0) {
+            res.json(result[0]);
+        } else {
+            res.status(404).json({ message: 'Group not found' });
+        }
+    });
+})
+
 // Route to add a group and insert into groupmember table
 router.post('/create', (req, res) => {
     const { name } = req.body;

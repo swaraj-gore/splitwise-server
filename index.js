@@ -2,9 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
+
 const app = express();
 
 const authRoutes = require('./routes/auth')
+const groupRoutes = require('./routes/group')
+
+const verifyToken = require('./middleware/verifyToken')
 
 app.use(cors());
 
@@ -13,6 +17,12 @@ app.use(express.json());
 
 // Mount the auth routes
 app.use('/auth', authRoutes);
+
+// verify the token for all the routes below
+app.use(verifyToken)
+
+// Mount the groups routes
+app.use('/groups', groupRoutes)
 
 const port = 3000;
 

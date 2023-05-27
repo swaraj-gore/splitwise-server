@@ -1,2 +1,2 @@
 # splitwise-server
-Express Server for splitwise-server
+Express Server for splitwise-app

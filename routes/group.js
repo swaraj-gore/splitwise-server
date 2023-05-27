@@ -26,4 +26,30 @@ router.get('/', (req, res) => {
     });
 });
 
+// Route to add a group and insert into groupmember table
+router.post('/create', (req, res) => {
+    const { name } = req.body;
+
+    const insertIntoGroupQuery = 'INSERT INTO `Group` (`name`) VALUES (?)';
+    const insertIntoGroupMemberQuery = 'INSERT INTO `Groupmember` values(?, ?)';
+    // Execute the query
+    connection.query(insertIntoGroupQuery, [name], (err, result) => {
+    if (err) {
+        console.error('Error creating group: ', err);
+        res.status(500).json({ error: 'Error creating group' });
+        return;
+    }
+    const groupId = result.insertId;
+    const userId = req.userId;
+    connection.query(insertIntoGroupMemberQuery, [groupId, userId], (err) => {
+        if(err) {
+        res.status(500).json({ error: 'Error creating group' });
+        return;
+        }
+    })
+    // Send the newly created group ID as a response
+        res.status(201).json({ group_id: result.insertId });
+    });
+});
+
 module.exports = router;

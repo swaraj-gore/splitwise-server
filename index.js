@@ -7,6 +7,7 @@ const app = express();
 
 const authRoutes = require('./routes/auth')
 const groupRoutes = require('./routes/group')
+const expenseRoutes = require('./routes/expense')
 
 const verifyToken = require('./middleware/verifyToken')
 
@@ -23,6 +24,9 @@ app.use(verifyToken)
 
 // Mount the groups routes
 app.use('/groups', groupRoutes)
+
+// Mount the expense routes
+app.use("/expenses", expenseRoutes)
 
 const port = 3000;
 

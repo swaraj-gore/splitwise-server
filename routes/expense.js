@@ -39,4 +39,24 @@ router.post('/create',(req, res) => {
   })
 });
 
+// route to fetch expense by groupId
+router.get('/group/:groupId', (req, res) => {
+  const groupId = +req.params.groupId;
+  const userId = req.userId;
+  const getExpenseQuery = 'SELECT * from expense WHERE group_id = ?';
+  const checkGroupQuery = "call is_user_member_of_group(?, ?)";
+  // check if user is member of group
+  connection.query(checkGroupQuery, [userId, groupId], (err, result) => {
+    if(result[0].length === 0) {
+      res.status(404).json({message: "Group not found!"})
+    }
+    connection.query(getExpenseQuery, [groupId], (err, result) => {
+        if(err) {
+          res.status(500).json({message: "Error while fetching the"})
+        }
+        res.json(result[0]);
+    })
+  })
+})
+
 module.exports = router

@@ -42,6 +42,26 @@ router.get('/:groupId', (req, res) => {
     });
 })
 
+// Define a route to get settlement summary for a group
+router.get('/:groupId/summary', (req, res) => {
+    const groupId = req.params.groupId;
+    const userId = req.userId;
+    const checkGroupQuery = 'call is_user_member_of_group(?, ?)'
+    const getSummaryQuery = 'call calculate_settlement_summary(?)';
+
+    connection.query(checkGroupQuery, [userId, groupId], (err, results) => {
+        if(results[0].length === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+
+        connection.query(getSummaryQuery, [groupId], (err, result) => {
+            res.status(200).json(result[0]);
+        })
+        
+    })
+})
+
 // Route to add a group and insert into groupmember table
 router.post('/create', (req, res) => {
     const { name } = req.body;

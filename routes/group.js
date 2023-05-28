@@ -68,4 +68,34 @@ router.post('/create', (req, res) => {
     });
 });
 
+// Define a route to add existing member to existing group
+router.post('/:groupId/add-member', (req, res) => {
+    const groupId = req.params.groupId;
+    const { newMemberId } = req.body;
+    const userId = req.userId;
+
+    const checkGroupQuery = "\
+        SELECT group_id\
+        FROM groupmember\
+        WHERE user_id = ? AND group_id = ?;\
+    "
+
+    const addMemberQuery = "\INSERT INTO `Groupmember` VALUES(?, ?)"
+
+    connection.query(checkGroupQuery, [userId, groupId], (err, result) => {
+        if(result.length === 0) {
+            res.status(404).json({ message: 'Group not found' });
+            return;
+        }
+        
+        connection.query(addMemberQuery, [groupId, newMemberId], (err) => {
+            if(err) {
+                res.status(404).json({message: "Member doesn't exists!"})
+                return;
+            }
+            res.status(201).json({message: "Member added successfully!"})
+        })
+    })
+})
+
 module.exports = router;

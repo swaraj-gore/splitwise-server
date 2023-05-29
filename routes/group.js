@@ -42,6 +42,47 @@ router.get('/:groupId', (req, res) => {
     });
 })
 
+// Define a route to get settlement summary for a group
+router.get('/:groupId/summary', (req, res) => {
+    const groupId = req.params.groupId;
+    const userId = req.userId;
+    const checkGroupQuery = 'call is_user_member_of_group(?, ?)'
+    const getSummaryQuery = 'call calculate_settlement_summary(?)';
+
+    connection.query(checkGroupQuery, [userId, groupId], (err, results) => {
+        if(results[0].length === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+
+        connection.query(getSummaryQuery, [groupId], (err, result) => {
+            res.status(200).json(result[0]);
+        })
+        
+    })
+})
+
+// Define a route to get balance lent summary
+router.get('/:groupId/lent', (req, res) => {
+    const groupId = req.params.groupId;
+    const userId = req.userId;
+
+    const getLentSummaryQuery = 'call get_individual_balances_lent(?)';
+    const checkGroupQuery = 'call is_user_member_of_group(?, ?)';
+
+    connection.query(checkGroupQuery, [userId, groupId], (err, results) => {
+        if(results[0].length === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+        connection.query(getLentSummaryQuery, [groupId], (err, result) => {
+            if(err) res.status(500).json({message: "Error while fetching lent summary!"})
+            else
+            res.status(200).json(result[0]);
+        })
+    })
+})
+
 // Route to add a group and insert into groupmember table
 router.post('/create', (req, res) => {
     const { name } = req.body;

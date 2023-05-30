@@ -28,12 +28,13 @@ router.get('/', (req, res) => {
 
 // Define a route to get group by id
 router.get('/:groupId', (req, res) => {
-    const groupId = +req.params.groupId;
+    const groupId = isNaN(+req.params.groupId) ? null : +req.params.groupId;
     const userId = req.userId;
     const query = 'call get_group(?, ?)';
     connection.query(query, [groupId, userId], (err, result) => {
-        if (err) console.log(err);
-
+        if (err) {
+            res.status(500).json({message: "Error occured while fetching the Group"})
+        }
         if (result.length > 0) {
             res.json(result[0]);
         } else {
@@ -44,7 +45,7 @@ router.get('/:groupId', (req, res) => {
 
 // Define a route to get settlement summary for a group
 router.get('/:groupId/summary', (req, res) => {
-    const groupId = req.params.groupId;
+    const groupId = isNaN(req.params.groupId) ? null : req.params.groupId;
     const userId = req.userId;
     const checkGroupQuery = 'call is_user_member_of_group(?, ?)'
     const getSummaryQuery = 'call calculate_settlement_summary(?)';
@@ -64,7 +65,7 @@ router.get('/:groupId/summary', (req, res) => {
 
 // Define a route to get balance lent summary
 router.get('/:groupId/lent', (req, res) => {
-    const groupId = req.params.groupId;
+    const groupId = isNaN(req.params.groupId) ? null : req.params.groupId;
     const userId = req.userId;
 
     const getLentSummaryQuery = 'call get_individual_balances_lent(?)';
@@ -138,5 +139,111 @@ router.post('/:groupId/add-member', (req, res) => {
         })
     })
 })
+
+// Define route to add members ot the group
+router.post('/:groupId/members', (req, res) => {
+    const groupId = req.params.groupId;
+    const memberIds = req.body.memberIds; // Array of user IDs
+    // Create an array of arrays for bulk insertion
+    const values = memberIds.map(memberId => [groupId, memberId]);
+  
+    // Insert the members into the groupmember table
+    const query = 'INSERT INTO groupmember (group_id, user_id) VALUES ?';
+    connection.query(query, [values], (err, result) => {
+      if (err) {
+        console.error('Error adding members:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+  
+      return res.status(200).json({ message: 'Members added successfully' });
+    });
+  });
+
+
+// Define route to get non-members of group
+router.get('/:groupId/nonmembers', (req, res) => {
+    const groupId = isNaN(req.params.groupId) ? null : req.params.groupId;
+    const userId = req.userId;
+    // Get all users who are not part of the current group
+    const getNonMembersQuery = `
+      SELECT user_id, name
+      FROM splitwiseuser
+      WHERE user_id NOT IN (
+        SELECT user_id
+        FROM groupmember
+        WHERE group_id = ?
+      )
+    `;
+    const checkGroupQuery = "call is_user_member_of_group(?, ?)";
+    // check if user is member of group
+    connection.query(checkGroupQuery, [userId, groupId], (err, result) => {
+        if(result[0].length === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+        connection.query(getNonMembersQuery, [groupId], (err, result) => {
+            if (err) {
+              console.error('Error fetching non-members:', err);
+              return res.status(500).json({ error: 'Internal Server Error' });
+            }
+            return res.status(200).json(result);
+        });
+    })
+  });
+
+
+// Deinfe route to get members of group
+router.get('/:groupId/members', (req, res) => {
+    const groupId = req.params.groupId;
+    const userId = req.userId;
+    const getMembersQuery = `
+      SELECT u.user_id, u.name, u.email
+      FROM groupmember gm
+      INNER JOIN splitwiseuser u ON gm.user_id = u.user_id
+      WHERE gm.group_id = ?
+    `;
+    const checkGroupQuery = "call is_user_member_of_group(?, ?)";
+    // check if user is member of group
+    connection.query(checkGroupQuery, [userId, groupId], (err, result) => {
+        if(result[0].length === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+        // Execute the query
+        connection.query(getMembersQuery, [groupId], (error, results) => {
+            if (error) {
+                console.error('Error retrieving group members:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            } else {
+                // Return the results as JSON
+                res.json(results);
+            }
+        });
+    })
+});
+  
+// Define route to delete member of group
+router.delete('/:groupId/members/:memberId', (req, res) => {
+    const groupId = req.params.groupId;
+    const memberId = req.params.memberId;
+  
+    const deleteQuery = `DELETE FROM groupmember WHERE group_id = ? AND member_id = ?`;
+  
+    connection.query(deleteQuery, [groupId, memberId], (error, results) => {
+      if (error) {
+        console.error('Error deleting member from group:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+  
+      if (results.affectedRows === 0) {
+        // No rows were affected, member or group not found
+        return res.status(404).json({ error: 'Member or group not found' });
+      }
+  
+      res.status(200).json({ message: 'Member removed from group successfully' });
+    });
+});
+  
+  
 
 module.exports = router;

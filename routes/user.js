@@ -12,7 +12,7 @@ const connection = mysql.createConnection({
 });
 
 // Define a route get User by userId;
-router.get('/', (req, res) => {
+router.get('', (req, res) => {
     const userId = req.query.userId;
     const getUserQuery = 'SELECT name, email FROM splitwiseuser WHERE user_id = ?';
     connection.query(getUserQuery, [userId], (err, result) => {
@@ -20,7 +20,6 @@ router.get('/', (req, res) => {
             res.status(404).json({message: "User not found!"});
             return;
         }
-        console.log(result[0])
         res.status(200).json(result[0]);
     })
 })

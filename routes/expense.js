@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const router = express.Router();
 
@@ -29,6 +29,7 @@ router.post('/create',(req, res) => {
     connection.query(createExpenseQuery, [description, amount, expense_date, userId, group_id], (err) => {
       if (err) {
         res.status(500).json({ error: 'Error adding expense' });
+        console.log(err);
         return;
       }
    
@@ -60,6 +61,43 @@ router.get('', (req, res) => {
           res.status(500).json({message: "Error while fetching the"})
         }
         res.json(result);
+    })
+  })
+})
+
+// Define route to fetch expene by expenseId
+router.get('/:expenseId', (req, res) => {
+  const expenseId = req.params.expenseId;
+  const userId = req.userId;
+
+  const query = `
+    SELECT *
+    FROM Expense
+    where expense_id = ?
+  `;
+
+  connection.query(query, [expenseId], (err, result) => {
+    if(err) {
+      res.status(500).json({message: "Error while fetching expense!"})
+      return;
+    }
+    if(result?.length === 0) {
+      res.status(404).json({message: "Expense not found!"});
+      return;
+    }
+    const groupId = result[0].group_id;
+    const checkGroupQuery = "call is_user_member_of_group(?, ?)";
+    // check if user is member of group
+    connection.query(checkGroupQuery, [userId, groupId], (err, groupResult) => {
+      if(err) {
+        res.status(500).json("Error while fetching expenses!");
+        return;
+      }
+      if(groupResult[0].length === 0) {
+        res.status(404).json({message: "User doesn't belong to this Group!"})
+        return;
+      }
+      res.status(200).json(result[0]);
     })
   })
 })

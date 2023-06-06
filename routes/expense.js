@@ -124,4 +124,29 @@ router.put('/:expenseId', (req, res) => {
   });
 });
 
+router.delete('/:expenseId', (req, res) => {
+  const expenseId = req.params.expenseId;
+  
+  const deleteQuery = 'DELETE FROM Expense WHERE expense_id = ?';
+  
+  connection.query(deleteQuery, [expenseId], (err, result) => {
+    if (err) {
+      // Handle the error and send an appropriate response
+      console.error('Error deleting expense:', err);
+      res.status(500).json({ message: 'Error deleting expense' });
+      return;
+    }
+    
+    // Check if any rows were affected
+    if (result.affectedRows === 0) {
+      // No rows affected, expense not found
+      res.status(404).json({ message: 'Expense not found' });
+      return;
+    }
+    
+    // Expense deleted successfully
+    res.status(200).json({ message: 'Expense deleted successfully' });
+  });
+});
+
 module.exports = router

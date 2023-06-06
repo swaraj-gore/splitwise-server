@@ -102,4 +102,26 @@ router.get('/:expenseId', (req, res) => {
   })
 })
 
+// PUT route to update an expense by expense_id
+router.put('/:expenseId', (req, res) => {
+  const expenseId = req.params.expenseId;
+  const { description, amount, expense_date } = req.body;
+
+  const query = `
+    UPDATE Expense
+    SET description = ?, amount = ?, expense_date = ?
+    WHERE expense_id = ?
+  `;
+
+  connection.query(query, [description, amount, expense_date, expenseId], (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Error updating expense.' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Expense updated successfully.' });
+  });
+});
+
 module.exports = router

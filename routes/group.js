@@ -244,6 +244,26 @@ router.delete('/:groupId/members/:memberId', (req, res) => {
     });
 });
   
-  
+
+router.put('/:groupId', (req, res) => {
+    const groupId = req.params.groupId;
+    const { name } = req.body;
+    const updateQuery = 'UPDATE `Group` SET name = ? where group_id = ?';
+
+    connection.query(updateQuery, [name, groupId], (err, result) => {
+        if(err) {
+            console.log(err);
+            res.status(500).json({message: "Error while updating the group!"});
+            return;
+        }
+        if(result.affectedRows === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+        
+        res.status(200).json({message: "Group updated successfully!"});
+    })
+})
+
 
 module.exports = router;

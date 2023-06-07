@@ -265,5 +265,24 @@ router.put('/:groupId', (req, res) => {
     })
 })
 
+router.delete('/:groupId', (req, res) => {
+    const groupId = req.params.groupId;
+    const deleteQuery = 'DELETE FROM `Group` where group_id = ?';
+    connection.query(deleteQuery, [groupId], (err, result) => {
+        if(err) {
+            console.log(err);
+            res.status(500).json({message: "Error while deleting the group!"});
+            return;
+        }
+
+        if(result.affectedRows === 0) {
+            res.status(404).json({message: "Group not found!"});
+            return;
+        }
+
+        res.status(200).json({message: "Group deleted successfully!"})
+    })
+})
+
 
 module.exports = router;
